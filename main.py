@@ -33,6 +33,7 @@ Ideas:
     # health
     # radius/size
     # damage it causes at the end
+    # color
 class Enemy(object):
     def __init__(self, x, y):
         self.x = x
@@ -120,50 +121,54 @@ class Turret(object):
 
     def drawTurret(self, canvas, app):
         canvas.create_rectangle(self.x-self.r, self.y-self.r, self.x+self.r, 
-                           self.y+self.r, fill = 'black')
+                           self.y+self.r, fill = self.color)
                 
 
-# melee spiketrap class
-class spikeTrap(Turret):
-    def __init__(self, x, y):
-        self.x = x
-        self.y = y
-        self.range = 10
-        self.r = 30
-        self.fireRate = 10
-        self.typeShot = False 
-        self.damage = 100
-        self.price = 150
-
+# slower attack speed but more dmg
 class Cannon(Turret):
     def __init__(self, x, y):
         self.x = x
         self.y = y
         self.range = 200
         self.r = 20
-        self.fireRate = 30
+        self.attackSpeed = 30
         self.typeShot = False 
         self.damage = 50
         self.price = 100
+        self.color = 'black'
 
+# faster attack speed but less damage
+class Dart(Turret):
+    def __init__(self, x, y):
+        self.x = x
+        self.y = y
+        self.range = 200
+        self.r = 20
+        self.attackSpeed = 30
+        self.typeShot = False 
+        self.damage = 50
+        self.price = 100
+        self.color = 'red'
+
+# does low damage but has splash damage
 class Bomber(Turret):
     def __init__(self, x, y):
         self.x = x
         self.y = y
-        self.range = 30
+        self.range = 200
         self.r = 30
-        self.fireRate = 5
+        self.attackSpeed = 5
         self.typeShot = True
-        self.damage = 70
+        self.shotRadius = 100
+        self.damage = 5
         self.price = 300
+        self.color = 'grey'
 
 #############################################################################
 # Drawing
 #############################################################################
 
 def appStarted(app):
-    app.height = 600
-    app.width = 800
     app.enemies = [ ] 
     app.turrets = [ ]
     app.wave = 1
@@ -172,16 +177,19 @@ def appStarted(app):
     app.pause = True
     app.gameOver = False
 
+# spawns enemies
 def spawnEnemy(app):
     enemyList = [ Red, Blue, Yellow, Boss ]
     randEnemy = random.randint(0, len(enemyList) - 1)
     app.enemies.append(enemyList[randEnemy](0, 300))
 
+# moves each enemy
 def moveEnemy(app):
     if len(app.enemies) >= 1:
         for enemy in app.enemies:
             enemy.moveEnemy(app)
 
+# every turret shoots the closest enemy
 def shootEnemy(app):
     for turret in app.turrets:
         closeE = closestEnemy(app, turret)
@@ -192,6 +200,32 @@ def shootEnemy(app):
                 closeE.health -= turret.damage
             else:
                 app.enemies.remove(closeE)
+            if isinstance(turret, Bomber):
+                for enemy in app.enemies:
+                    if closeE == enemy:
+                        continue
+                    if distance(closeE.x, closeE.y, enemy.x, enemy.y) <= turret.shotRadius:
+                        if enemy.health > 0:
+                            enemy.health -= turret.damage
+                        else:
+                            app.enemies.remove(enemy)
+                        
+                
+# distance formula
+def distance(x0, y0, x1, y1):
+    return math.sqrt((x1-x0)**2 + (y1-y0)**2)
+
+# finds the closest enemy to a given turret
+def closestEnemy(app, turret):
+    closestD = None
+    if len(app.enemies) < 1:
+        return None
+    for enemy in app.enemies:
+        d = distance(turret.x, turret.y, enemy.x, enemy.y)
+        if closestD == None or d < closestD:
+            closestD = d
+            closeE = enemy
+    return closeE
 
 def timerFired(app):
     if app.health <= 0 :
@@ -201,19 +235,6 @@ def timerFired(app):
         #spawnEnemy(app)
         moveEnemy(app)
         shootEnemy(app)
-
-def distance(x0, y0, x1, y1):
-    return math.sqrt((x1-x0)**2 + (y1-y0)**2)
-
-def closestEnemy(app, turret):
-    closest = None
-    if len(app.enemies) < 1:
-        return None
-    for enemy in app.enemies:
-        d = distance(turret.x, turret.y, enemy.x, enemy.y)
-        if closest == None or d < closest:
-            closest = d
-    return enemy
 
 def keyPressed(app, event):
     if event.key == 'Escape':
@@ -239,12 +260,12 @@ def mousePressed(app, event):
 
     x = event.x
     y = event.y
-    t = Cannon(x,y)
+    t = Dart(x,y)
     if len(app.turrets) >= 2:
         for turret in app.turrets:
             if distance(t.x, t.y, turret.x, turret.y) < (t.r + turret.r):
                 return
-    app.turrets.append(Cannon(x,y))
+    app.turrets.append(Dart(x,y))
 
 
 #draws when gave is over
@@ -270,9 +291,8 @@ def redrawAll(app, canvas):
     if len(app.enemies) >= 1:
         for enemy in app.enemies:
             enemy.drawEnemy(canvas, app)
-    #drawTurret(app, canvas)
 
 
-runApp(width = 600, height = 600)
+runApp(width = 800, height = 600)
 
         
