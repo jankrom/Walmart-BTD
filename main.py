@@ -186,7 +186,7 @@ class Turret(object):
         self.x = x
         self.y = y
 
-    def drawTurret(self, canvas, app):
+    def drawTurret(self, canvas):
         canvas.create_rectangle(self.x-self.r, self.y-self.r, self.x+self.r, 
                            self.y+self.r, fill = self.color)
                 
@@ -250,13 +250,16 @@ def appStarted(app):
     app.turrets = [ ]
     app.wave = 1
     app.health = 100
-    app.currency = 100
+    app.currency = 10000
     app.pause = True
     app.gameOver = False
     app.cannonPrice = 100
     app.dartPrice = 150
     app.bombTowerPrice = 50
     app.selectedTurret = 0
+    app.selectedTurretL = []
+    app.selectedTurretX = 0
+    app.selectedTurretY = 0
 
 # https://www.cs.cmu.edu/~112/notes/notes-animations-part2.html
 # return True if (x, y) is inside the grid defined by app.
@@ -434,28 +437,58 @@ def mousePressed(app, event):
     m = app.shopMargin
     x = event.x
     y = event.y
+    if app.selectedTurret == 0:
+        pass
+    else:
+        t = app.selectedTurret(x,y)
+        if len(app.turrets) >= 2:
+            for turret in app.turrets:
+                if distance(t.x, t.y, turret.x, turret.y) < (t.r + turret.r):
+                    return
+        if app.currency - t.price >= 0:
+            app.turrets.append(t)
+            app.currency -= t.price
+        app.selectedTurret = 0
+    whatIsClicked(app, x, y)
+
+def whatIsClicked(app, x, y):
+    w = app.width
+    h = app.height
+    m = app.shopMargin
     if (x >= w-m*3//4 and x <= w-m//4 and y >= h//4 and y <= h//4+100):
         app.selectedTurret = Cannon
-    if (x >= w-m*3//4 and x <= w-m//4 and y >= h//4+150 and y <= h//4+250):
+    elif (x >= w-m*3//4 and x <= w-m//4 and y >= h//4+150 and y <= h//4+250):
         app.selectedTurret = Dart
-    if (x >= w-m*3//4 and x <= w-m//4 and y >= h//4+300 and y <= h//4+400):
+    elif (x >= w-m*3//4 and x <= w-m//4 and y >= h//4+300 and y <= h//4+400):
         app.selectedTurret = Bomber
+
 
 def mouseMoved(app, event):
     x = event.x
     y = event.y
+    if app.selectedTurret != 0:
+        app.selectedTurretX = x
+        app.selectedTurretY = y
 
-def mouseReleased(app, event):
-    x = event.x
-    y = event.y
-    t = app.selectedTurret(x,y)
-    if len(app.turrets) >= 2:
-        for turret in app.turrets:
-            if distance(t.x, t.y, turret.x, turret.y) < (t.r + turret.r):
-                return
-    if app.currency - t.price >= 0:
-        app.turrets.append(t)
-        app.currency -= t.price
+def drawSelectedTurret(app, canvas):
+    if app.selectedTurret != 0:
+        x = app.selectedTurretX
+        y = app.selectedTurretY
+        t = app.selectedTurret(x,y)
+        t.drawTurret(canvas)
+
+#remove this shit
+# def mouseReleased(app, event):
+#     x = event.x
+#     y = event.y
+#     t = app.selectedTurret(x,y)
+#     if len(app.turrets) >= 2:
+#         for turret in app.turrets:
+#             if distance(t.x, t.y, turret.x, turret.y) < (t.r + turret.r):
+#                 return
+#     if app.currency - t.price >= 0:
+#         app.turrets.append(t)
+#         app.currency -= t.price
 
 
 #draws when gave is over
@@ -469,17 +502,17 @@ def drawHealth(app, canvas):
     canvas.create_text((app.width - app.shopMargin) // 2, margin, 
                     text = f"Health: {app.health}", font = "Arial 26 bold")
 
-
 def redrawAll(app, canvas):
     #canvas.create_rectangle(0,0, app.width, app.height, fill = "green")
     if app.health <= 0:
         drawGameOver(app, canvas)
     drawBoard(app, canvas)
     drawShop(app, canvas)
+    drawSelectedTurret(app, canvas)
     drawHealth(app, canvas)
     if len(app.turrets) >= 1:
         for turret in app.turrets:
-            turret.drawTurret(canvas, app)
+            turret.drawTurret(canvas)
     if len(app.enemies) >= 1:
         for enemy in app.enemies:
             enemy.drawEnemy(canvas, app)
@@ -487,4 +520,3 @@ def redrawAll(app, canvas):
 
 runApp(width = 800, height = 600)
 
-        
