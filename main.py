@@ -2,6 +2,7 @@ import sys
 from cmu_112_graphics import *
 import math
 import random
+import time
 
 '''
 Content:
@@ -12,7 +13,6 @@ Content:
 
 '''
 Ideas:
-    Dungeon Themed
     Randomly generated path or let player make own path
     Gets progressively harder as the rounds go by
 '''
@@ -223,7 +223,7 @@ class Bomber(Turret):
         self.x = x
         self.y = y
         self.range = 200
-        self.r = 50
+        self.r = 30
         self.attackSpeed = 5
         self.typeShot = True
         self.shotRadius = 100
@@ -242,6 +242,7 @@ def appStarted(app):
     app.cellWidth = (app.width-200) // app.cols
     app.cellHeight = app.cellWidth
     app.shopMargin = app.width // 4
+    app.gridWidth = app.width - app.shopMargin
     app.boardColor = 'green'
     app.pathColor = 'goldenrod3'
     #app.board = [ [app.boardColor] * app.cols for row in range(app.rows)]
@@ -256,10 +257,12 @@ def appStarted(app):
     app.cannonPrice = 100
     app.dartPrice = 150
     app.bombTowerPrice = 50
-    app.selectedTurret = 0
-    app.selectedTurretL = []
-    app.selectedTurretX = 0
-    app.selectedTurretY = 0
+    app.selectedTurret = None
+    app.selectedTurretX = None
+    app.selectedTurretY = None
+    app.enemySpawnCounter = 0
+    app.initialTime = time.time()
+    app.waveFinished = False
 
 # https://www.cs.cmu.edu/~112/notes/notes-animations-part2.html
 # return True if (x, y) is inside the grid defined by app.
@@ -341,9 +344,56 @@ def drawShop(app, canvas):
 
 # spawns enemies
 def spawnEnemy(app):
-    enemyList = [ Red, Blue, Yellow, Boss ]
-    randEnemy = random.randint(0, len(enemyList) - 1)
-    app.enemies.append(enemyList[randEnemy](0, 75))
+    currTime = time.time()
+    elapsedTime = currTime - app.initialTime
+    if app.wave == 1:
+        if elapsedTime >= 1:
+            if app.enemySpawnCounter < 10:
+                app.enemies.append(Red(0, 75))
+                app.initialTime = time.time()
+                app.enemySpawnCounter += 1
+            else:
+                app.waveFinished = True
+    elif app.wave == 2:
+        if elapsedTime >= 1:
+            if app.enemySpawnCounter < 10:
+                app.enemies.append(Red(0, 75))
+                app.initialTime = time.time()
+                app.enemySpawnCounter += 1
+            elif 9 < app.enemySpawnCounter < 15:
+                app.enemies.append(Blue(0, 75))
+                app.initialTime = time.time()
+                app.enemySpawnCounter += 1
+            else:
+                app.waveFinished = True
+    elif app.wave == 3:
+        if elapsedTime >= 1:
+            if app.enemySpawnCounter < 10:
+                app.enemies.append(Red(0, 75))
+                app.initialTime = time.time()
+                app.enemySpawnCounter += 1
+            else:
+                app.waveFinished = True
+    elif app.wave == 4:
+        if elapsedTime >= 1:
+            if app.enemySpawnCounter < 10:
+                app.enemies.append(Red(0, 75))
+                app.initialTime = time.time()
+                app.enemySpawnCounter += 1
+            elif 9 < app.enemySpawnCounter < 15:
+                app.enemies.append(Blue(0, 75))
+                app.initialTime = time.time()
+                app.enemySpawnCounter += 1
+            else:
+                app.waveFinished = True
+    elif app.wave == 5:
+        if elapsedTime >= 1:
+            if app.enemySpawnCounter < 10:
+                app.enemies.append(Red(0, 75))
+                app.initialTime = time.time()
+                app.enemySpawnCounter += 1
+            else:
+                app.waveFinished = True
 
 # moves each enemy
 def moveEnemy(app):
@@ -391,14 +441,25 @@ def closestEnemy(app, turret):
             closeE = enemy
     return closeE
 
+def waveChanger(app):
+    if app.waveFinished == True and len(app.enemies) == 0:
+        app.wave += 1
+        app.enemySpawnCounter = 0
+        app.waveFinished = False
+
+
 def timerFired(app):
+    # currTime = time.time()
+    # elapsedTime = currTime - app.initialTime
     if app.health <= 0 :
         app.gameOver = True
         app.pause = False
     if app.pause == True:
-        #spawnEnemy(app)
+        #if elapsedTime >= 5:
+        spawnEnemy(app)
         moveEnemy(app)
         shootEnemy(app)
+        waveChanger(app)
         #app.currency += 1
 
 def keyPressed(app, event):
@@ -407,48 +468,38 @@ def keyPressed(app, event):
     elif event.key == 'Space':
         spawnEnemy(app)
         
-    # elif event.key == '1':
-    #     spikeTrap.spawnTurret()
-    # elif event.key == '2':
-    #     Cannon.spawnTurret()
-    # elif event.key == '3':
-    #     Bomber.spawnTurret()
 
 def mousePressed(app, event):
-    # using this to debug as i can spawn wherever I want
-
-    # x = event.x
-    # y = event.y
-    # enemyList = [ Red, Blue, Yellow, Boss ]
-    # randEnemy = random.randint(0, len(enemyList) - 1)
-    # app.enemies.append(enemyList[randEnemy](x, y))
-
-    # x = event.x
-    # y = event.y
-    # t = Dart(x,y)
-    # if len(app.turrets) >= 2:
-    #     for turret in app.turrets:
-    #         if distance(t.x, t.y, turret.x, turret.y) < (t.r + turret.r):
-    #             return
-    # app.turrets.append(Dart(x,y))
-
     w = app.width
     h = app.height
     m = app.shopMargin
     x = event.x
     y = event.y
-    if app.selectedTurret == 0:
+    if app.selectedTurret == None:
         pass
     else:
-        t = app.selectedTurret(x,y)
-        if len(app.turrets) >= 2:
+        if x < (app.width - app.shopMargin):
+            t = app.selectedTurret(x,y)
+            (row, col) = getCell(app, x, y)
+            (row1, col1) = getCell(app, x+t.r, y)
+            (row2, col2) = getCell(app, x-t.r, y)
+            (row3, col3) = getCell(app, x, y+t.r)
+            (row4, col4) = getCell(app, x, y-t.r)
+            if (t.x + t.r > (app.width - app.shopMargin) or 
+                app.board[row][col] == app.pathColor or
+                app.board[row1][col1] == app.pathColor or 
+                app.board[row2][col2] == app.pathColor or 
+                app.board[row3][col3] == app.pathColor or 
+                app.board[row4][col4] == app.pathColor):
+                return
+            # if len(app.turrets) >= 2:
             for turret in app.turrets:
-                if distance(t.x, t.y, turret.x, turret.y) < (t.r + turret.r):
+                if distance(t.x, t.y, turret.x, turret.y) < (t.r + turret.r)+2:
                     return
-        if app.currency - t.price >= 0:
-            app.turrets.append(t)
-            app.currency -= t.price
-        app.selectedTurret = 0
+            if app.currency - t.price >= 0:
+                app.turrets.append(t)
+                app.currency -= t.price
+        app.selectedTurret = None
     whatIsClicked(app, x, y)
 
 def whatIsClicked(app, x, y):
@@ -466,29 +517,17 @@ def whatIsClicked(app, x, y):
 def mouseMoved(app, event):
     x = event.x
     y = event.y
-    if app.selectedTurret != 0:
+    if app.selectedTurret != None:
         app.selectedTurretX = x
         app.selectedTurretY = y
 
 def drawSelectedTurret(app, canvas):
-    if app.selectedTurret != 0:
-        x = app.selectedTurretX
-        y = app.selectedTurretY
-        t = app.selectedTurret(x,y)
-        t.drawTurret(canvas)
-
-#remove this shit
-# def mouseReleased(app, event):
-#     x = event.x
-#     y = event.y
-#     t = app.selectedTurret(x,y)
-#     if len(app.turrets) >= 2:
-#         for turret in app.turrets:
-#             if distance(t.x, t.y, turret.x, turret.y) < (t.r + turret.r):
-#                 return
-#     if app.currency - t.price >= 0:
-#         app.turrets.append(t)
-#         app.currency -= t.price
+    if app.selectedTurret != None:
+        if app.selectedTurretX != None and app.selectedTurretY != None:
+            x = app.selectedTurretX
+            y = app.selectedTurretY
+            t = app.selectedTurret(x,y)
+            t.drawTurret(canvas)
 
 
 #draws when gave is over
@@ -496,20 +535,22 @@ def drawGameOver(app, canvas):
     canvas.create_text(app.width // 2, app.height // 2, text = "GAME OVER",
                         font = '100')
 
-#draws how much health player has left
-def drawHealth(app, canvas):
+#draws how much health player has left and current wave
+def drawHealthAndWave(app, canvas):
     margin = 35
     canvas.create_text((app.width - app.shopMargin) // 2, margin, 
                     text = f"Health: {app.health}", font = "Arial 26 bold")
+    canvas.create_text((app.width - app.shopMargin) // 2, app.height - 15, 
+                        text = f"Wave {app.wave}", font = "Arial 16 bold")
 
 def redrawAll(app, canvas):
     #canvas.create_rectangle(0,0, app.width, app.height, fill = "green")
-    if app.health <= 0:
-        drawGameOver(app, canvas)
     drawBoard(app, canvas)
     drawShop(app, canvas)
     drawSelectedTurret(app, canvas)
-    drawHealth(app, canvas)
+    drawHealthAndWave(app, canvas)
+    if app.health <= 0:
+        drawGameOver(app, canvas)
     if len(app.turrets) >= 1:
         for turret in app.turrets:
             turret.drawTurret(canvas)
