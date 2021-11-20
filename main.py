@@ -246,7 +246,8 @@ def appStarted(app):
     app.boardColor = 'green'
     app.pathColor = 'goldenrod3'
     #app.board = [ [app.boardColor] * app.cols for row in range(app.rows)]
-    app.board = hardCodedPath(app)
+    (app.startX, app.startY, app.board) = boardGenerator(app)
+    app.cellCount = 0
     app.enemies = [ ] 
     app.turrets = [ ]
     app.wave = 1
@@ -285,6 +286,117 @@ def getCellBounds(app, row, col):
     y0 = row * app.cellHeight
     y1 = (row+1) * app.cellHeight
     return (x0, y0, x1, y1)
+
+def boardGenerator(app):
+    start = random.randint(0,3)
+    end = random.randint(0,3)
+    if start == 0: #start on left side
+        startRow = random.randint(0,app.rows-1)
+        startCol = 0
+        endRow = random.randint(0,app.rows-1)
+        endCol = 0
+        (x0, y0, x1, y1) = getCellBounds(app, startRow, startCol)
+        startX = 0
+        startY = (y0 + y1)//2
+    elif start == 1: #start on top
+        startRow = 0
+        startCol = random.randint(0,app.cols-1)
+        endRow = 0
+        endCol = random.randint(0,app.cols-1)
+        (x0, y0, x1, y1) = getCellBounds(app, startRow, startCol)
+        startX = (x0+x1)//2
+        startY = 0
+    elif start == 2: #start on right side
+        startRow = random.randint(0,app.rows-1)
+        startCol = app.cols-1
+        endRow = random.randint(0,app.rows-1)
+        endCol = app.cols-1
+        (x0, y0, x1, y1) = getCellBounds(app, startRow, startCol)
+        startX = app.gridWidth
+        startY = (y0 + y1)//2
+    elif start == 3: #start on bottom side
+        startRow = app.rows-1
+        startCol = random.randint(0,app.cols-1)
+        endRow = app.rows-1
+        endCol = random.randint(0,app.cols-1)
+        (x0, y0, x1, y1) = getCellBounds(app, startRow, startCol)
+        startX = (x0+x1)//2
+        startY = app.height
+    elif end == 0: #end on left side
+        endRow = random.randint(0,app.rows-1)
+        endCol = 0
+    elif end == 1: #end on top
+        endRow = 0
+        endCol = random.randint(0,app.cols-1)
+    elif end == 2: #end on right side
+        endRow = random.randint(0,app.rows-1)
+        endCol = app.cols-1
+    elif end == 3: #end on bottom side
+        endRow = app.rows-1
+        endCol = random.randint(0,app.cols-1)
+    board = [ [app.boardColor] * app.cols for row in range(app.rows)]
+    minimumPath = 20
+    startRow = 0
+    startCol = 0
+    endRow = 4
+    endCol = 0
+    return (startX, startY, randomMapGenerator(app, board, startRow, startCol, endRow, endCol, minimumPath, set()))
+
+def randomMapGenerator(app, board, row, col, endRow, endCol, minimumPath, seenPath, count = 0):
+    if row == endRow and col == endCol and count >= minimumPath:
+        return board
+    else:
+        list = [(0,1), (0,-1), (1,0), (-1, 0)]
+        #random.shuffle(list)
+        for (drow, dcol) in list:
+            newRow = drow + row
+            newCol = dcol + col
+            newRow1 = drow + newRow
+            newCol1 = dcol + newCol
+            newRow2 = drow + newRow1
+            newCol2 = dcol + newCol1
+            if count == 0:
+                newRow = row
+                newCol = col
+                newRow1 = drow + newRow
+                newCol1 = dcol + newCol
+                newRow2 = drow + newRow1
+                newCol2 = dcol + newCol1
+            if isPathLegal(app, board, newRow, newCol, newRow1, newCol1, newRow2, newCol2, endRow, endCol, seenPath):
+                board[newRow][newCol] = app.pathColor
+                board[newRow1][newCol1] = app.pathColor
+                board[newRow2][newCol2] = app.pathColor
+                solution = randomMapGenerator(app, board, newRow2, newCol2, 
+                                            endRow, endCol, minimumPath, seenPath, count + 1)
+                if solution != None:
+                    return board
+                board[newRow][newCol] = app.boardColor
+                board[newRow1][newCol1] = app.boardColor
+                board[newRow2][newCol2] = app.boardColor
+                seenPath.remove((newRow, newCol))
+                seenPath.remove((newRow1, newCol1))
+                seenPath.remove((newRow2, newCol2))
+        return None
+
+
+def isPathLegal(app, board, newRow, newCol, newRow1, newCol1, newRow2, newCol2, endRow, endCol, seenPath):
+    if (newRow >= app.rows or newRow < 0 or newCol >= app.cols or newCol < 0 or 
+        newRow1 >= app.rows or newRow1 < 0 or newCol1 >= app.cols or newCol1 < 0
+        or newRow2 >= app.rows or newRow2 < 0 or newCol2 >= app.cols or newCol2 < 0):
+        return False
+    # elif (board[newRow][newCol] == app.pathColor or 
+    #     board[newRow1][newCol1] == app.pathColor or 
+    #     board[newRow2][newCol2] == app.pathColor):
+    #     return False
+    elif ((newRow, newCol) not in seenPath and 
+            (newRow1, newCol1) not in seenPath and 
+            (newRow2, newCol2) not in seenPath):
+        seenPath.add((newRow, newCol))
+        seenPath.add((newRow1, newCol1))
+        seenPath.add((newRow2, newCol2))
+        return True
+    return False
+
 
 # creates a hardcoded map
 def hardCodedPath(app):
@@ -349,7 +461,8 @@ def spawnEnemy(app):
     if app.wave == 1:
         if elapsedTime >= 1:
             if app.enemySpawnCounter < 10:
-                app.enemies.append(Red(0, 75))
+                #app.enemies.append(Red(app.startX, app.startY))
+                app.enemies.append(Red(0, app.cellHeight//2))
                 app.initialTime = time.time()
                 app.enemySpawnCounter += 1
             else:
@@ -492,7 +605,6 @@ def mousePressed(app, event):
                 app.board[row3][col3] == app.pathColor or 
                 app.board[row4][col4] == app.pathColor):
                 return
-            # if len(app.turrets) >= 2:
             for turret in app.turrets:
                 if distance(t.x, t.y, turret.x, turret.y) < (t.r + turret.r)+2:
                     return
