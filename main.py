@@ -49,7 +49,6 @@ class Enemy(object):
             canvas.create_text(self.x, self.y - margin, text = f"{self.health}")
     
     def moveEnemy(self, app):
-        print(app.startX, app.startY)
         if (self.x-self.r >= app.width or self.x+self.r <= 0 or 
             self.y-self.r >= app.height or self.y+self.r <= 0):
             app.health -= self.destruct
@@ -83,10 +82,10 @@ class Enemy(object):
 
 # checks if a x direction move is legal
 def moveEnemyLegalX(self, app, row, col):
-    if (row, col+1) not in self.seenPath and col+1 <= app.cols - 1 and app.board[row][col+1] == app.pathColor:
+    if (row, col+1) not in self.seenPath and app.board[row][col+1] == app.pathColor:
         self.speedx = abs(self.speedx)
         return True
-    elif (row, col-1) not in self.seenPath and col-1 >= 0 and app.board[row][col-1] == app.pathColor:
+    elif (row, col-1) not in self.seenPath and app.board[row][col-1] == app.pathColor:
         self.speedx = -abs(self.speedx)
         return True
     return False
@@ -187,23 +186,84 @@ class Turret(object):
         self.x = x
         self.y = y
 
-    def drawTurret(self, canvas):
-        canvas.create_rectangle(self.x-self.r, self.y-self.r, self.x+self.r, 
-                           self.y+self.r, fill = self.color)
-                
+# every turret shoots the closest enemy
+    def shootEnemy(self, app):
+        currTime = time.time()
+        self.elapsedTime = currTime - self.initialTime
+        if isinstance(self, Cannon):
+            if self.elapsedTime >= 0.5:
+                closeE = closestEnemy(app, self)
+                self.initialTime = currTime
+                if closeE == None:
+                    return
+                if distance(closeE.x, closeE.y, self.x, self.y) <= self.range:
+                    if closeE.health > 1:
+                        self.shooting = True
+                        closeE.health -= self.damage
+                    else:
+                        self.shooting = False
+                        app.currency += closeE.worth
+                        app.enemies.remove(closeE)
+        elif isinstance(self, Dart):
+            if self.elapsedTime >= 0.5:
+                closeE = closestEnemy(app, self)
+                self.initialTime = currTime
+                if closeE == None:
+                    return
+                if distance(closeE.x, closeE.y, self.x, self.y) <= self.range:
+                    if closeE.health > 1:
+                        closeE.health -= self.damage
+                    else:
+                        app.currency += closeE.worth
+                        app.enemies.remove(closeE)
+        elif isinstance(self, Bomber):
+            if self.elapsedTime >= 2:
+                closeE = closestEnemy(app, self)
+                self.initialTime = currTime
+                if closeE == None:
+                    return
+                if distance(closeE.x, closeE.y, self.x, self.y) <= self.range:
+                    if closeE.health > 1:
+                        closeE.health -= self.damage
+                    else:
+                        app.currency += closeE.worth
+                        app.enemies.remove(closeE)
+                    for enemy in app.enemies:
+                        if closeE == enemy:
+                            continue
+                        if distance(closeE.x, closeE.y, enemy.x, enemy.y) <= self.shotRadius:
+                            if enemy.health > 1:
+                                enemy.health -= self.damage
+                            else:
+                                app.currency += enemy.worth
+                                app.enemies.remove(enemy)
+
+    def drawRadius(self, canvas):
+        canvas.create_oval(self.x-self.range, self.y-self.range, self.x+self.range, 
+                           self.y+self.range, fill = '')
 
 # slower attack speed but more dmg
 class Cannon(Turret):
     def __init__(self, x, y):
         self.x = x
         self.y = y
-        self.range = 200
+        self.range = 100
         self.r = 20
         self.attackSpeed = 30
         self.typeShot = False 
-        self.damage = 50
+        self.damage = 100
         self.price = 100
         self.color = 'black'
+        self.initialTime = time.time()
+        self.elapsedTime = 0
+        self.shooting = False
+
+    def drawTurret(self, canvas):
+        canvas.create_oval(self.x-self.r, self.y-self.r, self.x+self.r, 
+                           self.y+self.r, fill = self.color)
+        canvas.create_rectangle(self.x-2*self.r, self.y-self.r//2, self.x, 
+                           self.y+self.r//2, fill = self.color)
+
 
 # faster attack speed but less damage
 class Dart(Turret):
@@ -214,16 +274,25 @@ class Dart(Turret):
         self.r = 20
         self.attackSpeed = 30
         self.typeShot = False 
-        self.damage = 50
+        self.damage = 100
         self.price = 100
         self.color = 'red'
+        self.initialTime = time.time()
+        self.elapsedTime = 0
+        self.shooting = False
+
+    def drawTurret(self, canvas):
+        canvas.create_rectangle(self.x-self.r, self.y-self.r, self.x+self.r, 
+                           self.y+self.r, fill = self.color)
+        canvas.create_polygon(self.x, self.y-self.r, self.x, 
+                           self.y+self.r, self.x - 2*self.r, self.y, fill = self.color)
 
 # does low damage but has splash damage
 class Bomber(Turret):
     def __init__(self, x, y):
         self.x = x
         self.y = y
-        self.range = 200
+        self.range = 50
         self.r = 30
         self.attackSpeed = 5
         self.typeShot = True
@@ -231,6 +300,16 @@ class Bomber(Turret):
         self.damage = 50
         self.price = 50
         self.color = 'grey'
+        self.initialTime = time.time()
+        self.elapsedTime = 0
+        self.shooting = False
+    
+    def drawTurret(self, canvas):
+        canvas.create_rectangle(self.x-self.r, self.y-self.r, self.x+self.r, 
+                           self.y+self.r, fill = self.color)
+        canvas.create_oval(self.x-self.r//2, self.y-self.r//2, self.x+self.r//2, 
+                           self.y+self.r//2, fill = 'black')
+        
 
 #############################################################################
 # Drawing
@@ -264,7 +343,8 @@ def appStarted(app):
     app.selectedTurretX = None
     app.selectedTurretY = None
     app.enemySpawnCounter = 0
-    app.initialTime = time.time()
+    app.initialTimeCurrency = time.time()
+    app.initialTimeWave = time.time()
     app.waveFinished = False
 
 # https://www.cs.cmu.edu/~112/notes/notes-animations-part2.html
@@ -317,8 +397,6 @@ def boardGenerator(app):
         startY = app.height
     board = [ [app.boardColor] * app.cols for row in range(app.rows)]
     minimumPath = 20
-    # startRow = 0
-    # startCol = 0
     return (startX, startY, randomMapGenerator(app, board, startRow, startCol, minimumPath, set()))
 
 def randomMapGenerator(app, board, row, col, minimumPath, seenPath, count = 0):
@@ -341,7 +419,7 @@ def randomMapGenerator(app, board, row, col, minimumPath, seenPath, count = 0):
                 newCol1 = dcol + newCol
                 newRow2 = drow + newRow1
                 newCol2 = dcol + newCol1
-            if isPathLegal(app, board, newRow, newCol, newRow1, newCol1, newRow2, newCol2, seenPath):
+            if isPathLegal(app, newRow, newCol, newRow1, newCol1, newRow2, newCol2, seenPath):
                 board[newRow][newCol] = app.pathColor
                 board[newRow1][newCol1] = app.pathColor
                 board[newRow2][newCol2] = app.pathColor
@@ -358,7 +436,7 @@ def randomMapGenerator(app, board, row, col, minimumPath, seenPath, count = 0):
         return None
 
 
-def isPathLegal(app, board, newRow, newCol, newRow1, newCol1, newRow2, newCol2, seenPath):
+def isPathLegal(app, newRow, newCol, newRow1, newCol1, newRow2, newCol2, seenPath):
     if (newRow >= app.rows or newRow < 0 or newCol >= app.cols or newCol < 0 or 
         newRow1 >= app.rows or newRow1 < 0 or newCol1 >= app.cols or newCol1 < 0
         or newRow2 >= app.rows or newRow2 < 0 or newCol2 >= app.cols or newCol2 < 0):
@@ -418,67 +496,69 @@ def drawShop(app, canvas):
     canvas.create_text(w - m//2, 100, text = f"Currency -- {app.currency}", font = "Arial 15 bold")
     # creates cannon shop
     canvas.create_rectangle(w-m//4, h//4, w-m*3//4, h//4+100, fill = 'white')
-    canvas.create_rectangle(w-m//4-20, h//4+20, w-m*3//4+20, h//4+100-20, fill = 'black')
+    canvas.create_oval(w-m//4-10, h//4+20, w-m*3//4+30, h//4+100-20, fill = 'black')
+    canvas.create_rectangle(w-m//4-40, h//4+35,w-m*3//4+10, h//4+55, fill = 'black')
     canvas.create_text(w - m//2, h//4+110, text = f"Cannon -- {app.cannonPrice}", font = "Arial 15 bold")
     # creates darter shop
     canvas.create_rectangle(w-m//4, h//4+150, w-m*3//4, h//4+250, fill = 'white')
     canvas.create_rectangle(w-m//4-20, h//4+150+20, w-m*3//4+20, h//4+250-20, fill = 'red')
+    canvas.create_polygon(w-m//4-100, h//4+200,w-m*3//4+50, h//4+180, w-m*3//4+50, h//4+220, fill = 'red')
     canvas.create_text(w - m//2, h//4+260, text = f"Darter -- {app.dartPrice}", font = "Arial 15 bold")
     # creates bomb tower shop
     canvas.create_rectangle(w-m//4, h//4+300, w-m*3//4, h//4+400, fill = 'white')
     canvas.create_rectangle(w-m//4-20, h//4+300+20, w-m*3//4+20, h//4+400-20, fill = 'grey')
+    canvas.create_oval(w-m//4-35, h//4+300+35, w-m*3//4+35, h//4+400-35, fill = 'black')
     canvas.create_text(w - m//2, h//4+410, text = f"Bomb Tower -- {app.bombTowerPrice}", font = "Arial 15 bold")
 
 # spawns enemies
 def spawnEnemy(app):
     currTime = time.time()
-    elapsedTime = currTime - app.initialTime
+    elapsedTime = currTime - app.initialTimeWave
     if app.wave == 1:
         if elapsedTime >= 1:
             if app.enemySpawnCounter < 10:
                 app.enemies.append(Red(app.startX, app.startY))
-                #app.enemies.append(Red(0, app.cellHeight//2))
-                app.initialTime = time.time()
+                app.initialTimeWave = time.time()
                 app.enemySpawnCounter += 1
             else:
                 app.waveFinished = True
     elif app.wave == 2:
         if elapsedTime >= 1:
             if app.enemySpawnCounter < 10:
-                app.enemies.append(Red(0, 75))
-                app.initialTime = time.time()
+                app.enemies.append(Red(app.startX, app.startY))
+                app.initialTimeWave = time.time()
                 app.enemySpawnCounter += 1
             elif 9 < app.enemySpawnCounter < 15:
-                app.enemies.append(Blue(0, 75))
-                app.initialTime = time.time()
+                app.enemies.append(Blue(app.startX, app.startY))
+                app.initialTimeWave = time.time()
                 app.enemySpawnCounter += 1
             else:
                 app.waveFinished = True
     elif app.wave == 3:
         if elapsedTime >= 1:
             if app.enemySpawnCounter < 10:
-                app.enemies.append(Red(0, 75))
-                app.initialTime = time.time()
+                app.enemies.append(Red(app.startX, app.startY))
+                app.initialTimeWave = time.time()
                 app.enemySpawnCounter += 1
             else:
                 app.waveFinished = True
     elif app.wave == 4:
         if elapsedTime >= 1:
             if app.enemySpawnCounter < 10:
-                app.enemies.append(Red(0, 75))
-                app.initialTime = time.time()
+                app.enemies.append(Red(app.startX, app.startY))
+                app.initialTimeWave = time.time()
                 app.enemySpawnCounter += 1
             elif 9 < app.enemySpawnCounter < 15:
-                app.enemies.append(Blue(0, 75))
-                app.initialTime = time.time()
+                app.enemies.append(Blue(app.startX, app.startY))
+                app.initialTimeWave = time.time()
                 app.enemySpawnCounter += 1
             else:
                 app.waveFinished = True
     elif app.wave == 5:
         if elapsedTime >= 1:
             if app.enemySpawnCounter < 10:
-                app.enemies.append(Red(0, 75))
-                app.initialTime = time.time()
+                app.enemies.append(Red(app.startX, app.startY))
+                app.initialTimeWave = time.time()
                 app.enemySpawnCounter += 1
             else:
                 app.waveFinished = True
@@ -488,30 +568,6 @@ def moveEnemy(app):
     if len(app.enemies) >= 1:
         for enemy in app.enemies:
             enemy.moveEnemy(app)
-
-# every turret shoots the closest enemy
-def shootEnemy(app):
-    for turret in app.turrets:
-        closeE = closestEnemy(app, turret)
-        if closeE == None:
-            return
-        if distance(closeE.x, closeE.y, turret.x, turret.y) <= turret.range:
-            if closeE.health > 0:
-                closeE.health -= turret.damage
-            else:
-                app.currency += closeE.worth
-                app.enemies.remove(closeE)
-            if isinstance(turret, Bomber):
-                for enemy in app.enemies:
-                    if closeE == enemy:
-                        continue
-                    if distance(closeE.x, closeE.y, enemy.x, enemy.y) <= turret.shotRadius:
-                        if enemy.health > 0:
-                            enemy.health -= turret.damage
-                        else:
-                            app.currency += enemy.worth
-                            app.enemies.remove(enemy)
-                        
                 
 # distance formula
 def distance(x0, y0, x1, y1):
@@ -537,8 +593,8 @@ def waveChanger(app):
 
 
 def timerFired(app):
-    # currTime = time.time()
-    # elapsedTime = currTime - app.initialTime
+    currTime = time.time()
+    elapsedTime = currTime - app.initialTimeCurrency
     if app.health <= 0 :
         app.gameOver = True
         app.pause = False
@@ -546,9 +602,12 @@ def timerFired(app):
         #if elapsedTime >= 5:
         spawnEnemy(app)
         moveEnemy(app)
-        shootEnemy(app)
+        for turret in app.turrets:
+            turret.shootEnemy(app)
         waveChanger(app)
-        #app.currency += 1
+        if elapsedTime >= 1:
+            app.currency += 1
+            app.initialTimeCurrency = currTime
 
 def keyPressed(app, event):
     if event.key == 'Escape':
@@ -608,6 +667,7 @@ def mouseMoved(app, event):
         app.selectedTurretX = x
         app.selectedTurretY = y
 
+
 def drawSelectedTurret(app, canvas):
     if app.selectedTurret != None:
         if app.selectedTurretX != None and app.selectedTurretY != None:
@@ -615,6 +675,7 @@ def drawSelectedTurret(app, canvas):
             y = app.selectedTurretY
             t = app.selectedTurret(x,y)
             t.drawTurret(canvas)
+            t.drawRadius(canvas)
 
 
 #draws when gave is over
@@ -634,8 +695,6 @@ def redrawAll(app, canvas):
     #canvas.create_rectangle(0,0, app.width, app.height, fill = "green")
     drawBoard(app, canvas)
     drawShop(app, canvas)
-    drawSelectedTurret(app, canvas)
-    drawHealthAndWave(app, canvas)
     if app.health <= 0:
         drawGameOver(app, canvas)
     if len(app.turrets) >= 1:
@@ -644,6 +703,8 @@ def redrawAll(app, canvas):
     if len(app.enemies) >= 1:
         for enemy in app.enemies:
             enemy.drawEnemy(canvas, app)
+    drawSelectedTurret(app, canvas)
+    drawHealthAndWave(app, canvas)
 
 
 runApp(width = 800, height = 600)
