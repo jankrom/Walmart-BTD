@@ -353,14 +353,14 @@ class Shot(object):
                            self.shoty+self.cannonR//2, fill = 'red')
             self.shotx -= self.dx//2
             self.shoty -= self.dy//2
-        if isinstance(self.tType, Dart):
+        elif isinstance(self.tType, Dart):
             canvas.create_polygon(self.shotx - self.dartR, self.shoty-self.dartR//2, self.shotx - self.dartR, 
                            self.shoty+self.dartR//2, self.shotx - 2*self.dartR, self.shoty, fill = 'black')
             self.shotx -= self.dx//4
             self.shoty -= self.dy//4
-        if isinstance(self.tType, Bomber):
-            canvas.create_oval(self.shotx-2*self.bomberR, self.shoty-self.bomberR//2, self.shotx-self.bomberR, 
-                           self.shoty+self.bomberR//2, fill = 'red')
+        elif isinstance(self.tType, Bomber):
+            canvas.create_oval(self.shotx-self.bomberR//2, self.shoty-self.bomberR//2, self.shotx+self.bomberR//2, 
+                           self.shoty+self.bomberR//2, fill = 'black', outline = 'red')
             self.shotx -= self.dx//2
             self.shoty -= self.dy//2
 
@@ -395,6 +395,10 @@ def appStarted(app):
     app.selectedTurretX = None
     app.selectedTurretY = None
     app.enemySpawnCounter = 0
+    app.red = 0
+    app.blue = 0
+    app.yellow = 0
+    app.boss = 0
     app.initialTimeCurrency = time.time()
     app.initialTimeWave = time.time()
     app.waveFinished = False
@@ -623,6 +627,10 @@ def spawnEnemy(app):
                 app.enemySpawnCounter += 1
             else:
                 app.waveFinished = True
+    # elif app.wave >= 6 and app.wave % 2 == 0:
+    #     if elapsedTime >= 1:
+    #         for num in range(app.boss):
+    #             app.enemies.append(Boss(app.startX, app.startY))
 
 # moves each enemy
 def moveEnemy(app):
@@ -649,6 +657,8 @@ def closestEnemy(app, turret):
 def waveChanger(app):
     if app.waveFinished == True and len(app.enemies) == 0:
         app.wave += 1
+        # if app.wave >= 6 and app.wave % 2 == 0:
+        #     app.boss += 1
         app.enemySpawnCounter = 0
         app.waveFinished = False
 
@@ -767,9 +777,6 @@ def drawHealthAndWave(app, canvas):
 def redrawAll(app, canvas):
     #canvas.create_rectangle(0,0, app.width, app.height, fill = "green")
     drawBoard(app, canvas)
-    drawShop(app, canvas)
-    if app.health <= 0:
-        drawGameOver(app, canvas)
     if len(app.turrets) >= 1:
         for turret in app.turrets:
             turret.drawTurret(canvas)
@@ -778,8 +785,11 @@ def redrawAll(app, canvas):
             enemy.drawEnemy(canvas, app)
     for shot in app.shots:
         shot.drawShot(canvas, app)
+    drawShop(app, canvas)
     drawSelectedTurret(app, canvas)
     drawHealthAndWave(app, canvas)
+    if app.health <= 0:
+        drawGameOver(app, canvas)
 
 
 runApp(width = 800, height = 600)
