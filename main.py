@@ -317,7 +317,7 @@ class Bomber(Turret):
         self.typeShot = True
         self.shotRadius = 100
         self.damage = 50
-        self.price = 50
+        self.price = 250
         self.color = 'grey'
         self.initialTime = time.time()
         self.elapsedTime = 0
@@ -343,9 +343,9 @@ class Shot(object):
         self.shoty = turretY
         self.dx = self.tX - self.eX
         self.dy = self.tY - self.eY
-        self.cannonR = 20
-        self.dartR = 20
-        self.bomberR = 30
+        self.cannonR = turret.r
+        self.dartR = turret.r
+        self.bomberR = turret.r
 
     def drawShot(self, canvas, app):
         if isinstance(self.tType, Cannon):
@@ -361,8 +361,9 @@ class Shot(object):
         elif isinstance(self.tType, Bomber):
             canvas.create_oval(self.shotx-self.bomberR//2, self.shoty-self.bomberR//2, self.shotx+self.bomberR//2, 
                            self.shoty+self.bomberR//2, fill = 'black', outline = 'red')
-            self.shotx -= self.dx//2
-            self.shoty -= self.dy//2
+            self.shotx -= self.dx//6
+            self.shoty -= self.dy//6
+
 
 #############################################################################
 # Drawing
@@ -383,14 +384,14 @@ def appStarted(app):
     app.cellCount = 0
     app.enemies = [ ] 
     app.turrets = [ ]
-    app.wave = 5
+    app.wave = 1
     app.health = 100
-    app.currency = 10000
+    app.currency = 100
     app.pause = True
     app.gameOver = False
     app.cannonPrice = 100
     app.dartPrice = 150
-    app.bombTowerPrice = 50
+    app.bombTowerPrice = 250
     app.selectedTurret = None
     app.selectedTurretX = None
     app.selectedTurretY = None
@@ -399,6 +400,10 @@ def appStarted(app):
     app.blue = 0
     app.yellow = 0
     app.boss = 0
+    app.enemyRedCounter = 0
+    app.enemyBlueCounter = 0
+    app.enemyYellowCounter = 0
+    app.enemyBossCounter = 0
     app.initialTimeCurrency = time.time()
     app.initialTimeWave = time.time()
     app.waveFinished = False
@@ -627,10 +632,23 @@ def spawnEnemy(app):
                 app.enemySpawnCounter += 1
             else:
                 app.waveFinished = True
-    # elif app.wave >= 6 and app.wave % 2 == 0:
-    #     if elapsedTime >= 1:
-    #         for num in range(app.boss):
-    #             app.enemies.append(Boss(app.startX, app.startY))
+    elif app.wave >= 6:
+        if elapsedTime >= 1:
+            if app.enemyYellowCounter <= app.yellow:
+                app.enemies.append(Yellow(app.startX, app.startY))
+                app.enemyYellowCounter += 1
+            if app.enemyRedCounter <= app.red:
+                app.enemies.append(Red(app.startX, app.startY))
+                app.enemyRedCounter += 1
+            if app.enemyBlueCounter <= app.blue:
+                app.enemies.append(Blue(app.startX, app.startY))
+                app.enemyBlueCounter += 1
+            if app.enemyBossCounter <= app.boss:
+                app.enemies.append(Boss(app.startX, app.startY))
+                app.enemyBossCounter += 1
+            else:
+                app.waveFinished = True
+
 
 # moves each enemy
 def moveEnemy(app):
@@ -657,9 +675,20 @@ def closestEnemy(app, turret):
 def waveChanger(app):
     if app.waveFinished == True and len(app.enemies) == 0:
         app.wave += 1
-        # if app.wave >= 6 and app.wave % 2 == 0:
-        #     app.boss += 1
+        if app.wave % 2 == 0:
+            app.red += 5
+            app.blue += 10
+            app.yellow += 15
+        if app.wave % 3 == 0:
+            app.boss += 1
+        if app.wave >= 20:
+            app.boss += 5
+            app.yellow += 30
         app.enemySpawnCounter = 0
+        app.enemyRedCounter = 0
+        app.enemyBlueCounter = 0
+        app.enemyYellowCounter = 0
+        app.enemyBossCounter = 0
         app.waveFinished = False
 
 def checkHealth(app):
@@ -719,6 +748,9 @@ def mousePressed(app, event):
                 app.board[row][col] == app.pathColor or
                 app.board[row1][col1] == app.pathColor or 
                 app.board[row2][col2] == app.pathColor or 
+                row3 >= app.rows or
+                row4 <= 0 or 
+                col2 <= 0 or
                 app.board[row3][col3] == app.pathColor or 
                 app.board[row4][col4] == app.pathColor):
                 return
@@ -777,12 +809,10 @@ def drawHealthAndWave(app, canvas):
 def redrawAll(app, canvas):
     #canvas.create_rectangle(0,0, app.width, app.height, fill = "green")
     drawBoard(app, canvas)
-    if len(app.turrets) >= 1:
-        for turret in app.turrets:
-            turret.drawTurret(canvas)
-    if len(app.enemies) >= 1:
-        for enemy in app.enemies:
-            enemy.drawEnemy(canvas, app)
+    for turret in app.turrets:
+        turret.drawTurret(canvas)
+    for enemy in app.enemies:
+        enemy.drawEnemy(canvas, app)
     for shot in app.shots:
         shot.drawShot(canvas, app)
     drawShop(app, canvas)
