@@ -152,7 +152,7 @@ class Red(Enemy):
         self.speedx = 4
         self.speedy = 4
         self.lastMovement = 0
-        self.health = 100
+        self.health = 200
         self.r = 20
         self.destruct = 2
         self.color = 'red'
@@ -169,7 +169,7 @@ class Blue(Enemy):
         self.speedx = 4
         self.speedy = 4
         self.lastMovement = 0
-        self.health = 200
+        self.health = 400
         self.r = 20
         self.destruct = 5
         self.color = 'blue'
@@ -186,7 +186,7 @@ class Yellow(Enemy):
         self.speedx = 10
         self.speedy = 10
         self.lastMovement = 0
-        self.health = 150
+        self.health = 300
         self.r = 20
         self.destruct = 3
         self.color = 'yellow'
@@ -203,7 +203,7 @@ class Boss(Enemy):
         self.speedx = 2
         self.speedy = 2
         self.lastMovement = 0
-        self.health = 2000
+        self.health = 2500
         self.r = 50
         self.destruct = 20
         self.color = 'brown'
@@ -321,7 +321,7 @@ class Dart(Turret):
         self.attackSpeed = 30
         self.shotRadius = 100
         self.damage = 2
-        self.price = 100
+        self.price = 300
         self.color = 'red'
         self.initialTime = time.time()
         self.elapsedTime = 0
@@ -428,7 +428,7 @@ def appStarted(app):
     app.pause = True
     app.gameOver = False
     app.cannonPrice = 100
-    app.dartPrice = 150
+    app.dartPrice = 300
     app.bombTowerPrice = 250
     app.selectedTurret = None
     app.selectedTurretX = None
