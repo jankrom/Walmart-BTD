@@ -1,27 +1,66 @@
-import sys
 from cmu_112_graphics import *
 import math
 import random
 import time
 
-'''
-Content:
-    Towers
-    Minions
-    Map
-'''
-
-'''
-Ideas:
-    Randomly generated path or let player make own path
-    Gets progressively harder as the rounds go by
-'''
-
-
 #############################################################################
 # Splash Screen 
 #############################################################################   
 
+def splashScreenMode_redrawAll(app, canvas):
+    canvas.create_image(0, 0, image=ImageTk.PhotoImage(app.scaleImage(app.image1, 2.5)), anchor = 'nw')
+    canvas.create_text(150, app.height // 2, text = 'Press P to play', font = 'Arial 26 bold')
+    canvas.create_text(150, (app.height // 2) + 50, text = 'Press H for help', font = 'Arial 26 bold')
+    canvas.create_text(50, 50, text = 'Walmart', font = 'Arial 23 bold')
+
+def splashScreenMode_keyPressed(app, event):
+    if event.key == 'p':
+        app.mode = "gameMode"
+    elif event.key == 'h':
+        app.mode = 'helpMode'
+
+#############################################################################
+# Help Screen 
+############################################################################# 
+
+def helpMode_redrawAll(app, canvas):
+    canvas.create_image(0, 0, image=ImageTk.PhotoImage(app.scaleImage(app.image1, 2.5)), anchor = 'nw')
+    canvas.create_text(app.width // 2, 200, text = 'HELP', font = 'Arial 80 bold')
+    canvas.create_text(50, 50, text = 'Walmart', font = 'Arial 23 bold')
+    canvas.create_text(150, app.height // 2, text = '''
+        Tower defense game. 
+        Buy turrets from the shop, 
+        place them down, 
+        and destroy all the balloons. 
+        Don't destroy all the baloons
+        and you lose. 
+        That's no fun so don't lose''', font = 'Arial 12 bold')
+    canvas.create_text(170, (app.height // 2) + 100, text = 'Press P to play', font = 'Arial 26 bold')
+
+def helpMode_keyPressed(app, event):
+    if event.key == 'p':
+        app.mode = "gameMode"
+
+#############################################################################
+# Pause Screen 
+############################################################################# 
+
+def pauseMode_redrawAll(app, canvas):
+    canvas.create_image(0, 0, image=ImageTk.PhotoImage(app.scaleImage(app.image1, 2.5)), anchor = 'nw')
+    canvas.create_oval(100, 150, 200, 250, fill = 'turquoise')
+    canvas.create_text(150, 200, text = 'Continue')
+    canvas.create_oval(100, 350, 200, 450, fill = 'turquoise')
+    canvas.create_text(150, 400, text = 'Main Menu')
+
+def pauseMode_mousePressed(app, event):
+    x = event.x
+    y = event.y
+    if (x >= 100 and x <= 200 and y >= 150 and y <= 250):
+        app.pause = not app.pause
+        app.mode = "gameMode"
+    elif (x >= 100 and x <= 200 and y >= 350 and y <= 450):
+        app.pause = not app.pause
+        app.mode = "splashScreenMode"
 
 #############################################################################
 # Enemies
@@ -29,8 +68,6 @@ Ideas:
 # enemies class
 # each enemy should have:
     # speed
-    # camouflage or none
-            # True = camo, False = none
     # health
     # radius/size
     # damage it causes at the end
@@ -115,7 +152,6 @@ class Red(Enemy):
         self.speedx = 4
         self.speedy = 4
         self.lastMovement = 0
-        self.camo = False
         self.health = 100
         self.r = 20
         self.destruct = 2
@@ -133,7 +169,6 @@ class Blue(Enemy):
         self.speedx = 4
         self.speedy = 4
         self.lastMovement = 0
-        self.camo = False
         self.health = 200
         self.r = 20
         self.destruct = 5
@@ -151,7 +186,6 @@ class Yellow(Enemy):
         self.speedx = 7
         self.speedy = 7
         self.lastMovement = 0
-        self.camo = True
         self.health = 150
         self.r = 20
         self.destruct = 3
@@ -169,7 +203,6 @@ class Boss(Enemy):
         self.speedx = 2
         self.speedy = 2
         self.lastMovement = 0
-        self.camo = False
         self.health = 1000
         self.r = 50
         self.destruct = 20
@@ -178,7 +211,6 @@ class Boss(Enemy):
         self.count = 0
         self.worth = 1000
         self.slowed = False
-
 
 #############################################################################
 # Turrets
@@ -189,7 +221,6 @@ class Boss(Enemy):
     # radius/size
     # fire rate
     # type of shots (single enemy, multi enemy, splash)
-            # False = Single, True = Multi / Splash
     # dmg / shot
 class Turret(object):
     def __init__(self, x , y):
@@ -263,7 +294,6 @@ class Cannon(Turret):
         self.range = 100
         self.r = 20
         self.attackSpeed = 30
-        self.typeShot = False 
         self.damage = 100
         self.price = 100
         self.color = 'black'
@@ -274,6 +304,7 @@ class Cannon(Turret):
         self.shotx = x
         self.shoty = y
 
+#draws the cannons
     def drawTurret(self, canvas):
         canvas.create_oval(self.x-self.r, self.y-self.r, self.x+self.r, 
                            self.y+self.r, fill = self.color)
@@ -288,7 +319,6 @@ class Dart(Turret):
         self.range = 200
         self.r = 20
         self.attackSpeed = 30
-        self.typeShot = False 
         self.shotRadius = 100
         self.damage = 2
         self.price = 100
@@ -300,6 +330,7 @@ class Dart(Turret):
         self.shotx = x
         self.shoty = y
 
+#draws the darter turrets
     def drawTurret(self, canvas):
         canvas.create_rectangle(self.x-self.r, self.y-self.r, self.x+self.r, 
                            self.y+self.r, fill = self.color)
@@ -314,7 +345,6 @@ class Bomber(Turret):
         self.range = 100
         self.r = 30
         self.attackSpeed = 5
-        self.typeShot = True
         self.shotRadius = 100
         self.damage = 50
         self.price = 250
@@ -325,13 +355,18 @@ class Bomber(Turret):
         self.closeE = None
         self.shotx = x
         self.shoty = y
-    
+
+# draws the bombers  
     def drawTurret(self, canvas):
         canvas.create_rectangle(self.x-self.r, self.y-self.r, self.x+self.r, 
                            self.y+self.r, fill = self.color)
         canvas.create_oval(self.x-self.r//2, self.y-self.r//2, self.x+self.r//2, 
                            self.y+self.r//2, fill = 'black')
-        
+
+#############################################################################
+# Shots
+#############################################################################   
+#shots from turrets
 class Shot(object):
     def __init__(self, turretX, turretY, enemyX, enemyY, turret):
         self.tX = turretX
@@ -347,6 +382,7 @@ class Shot(object):
         self.dartR = turret.r
         self.bomberR = turret.r
 
+#draws the shots
     def drawShot(self, canvas, app):
         if isinstance(self.tType, Cannon):
             canvas.create_oval(self.shotx-2*self.cannonR, self.shoty-self.cannonR//2, self.shotx-self.cannonR, 
@@ -371,6 +407,9 @@ class Shot(object):
 
 
 def appStarted(app):
+    app.mode = 'splashScreenMode'
+    url = 'https://upload.wikimedia.org/wikipedia/en/e/e6/Bloons_TD_iOS_Logo.jpg'
+    app.image1 = app.loadImage(url)
     app.rows = app.height // 30
     app.cols = app.width // 40
     app.cellWidth = (app.width-200) // app.cols
@@ -380,7 +419,6 @@ def appStarted(app):
     app.boardColor = 'green'
     app.pathColor = 'goldenrod3'
     (app.startX, app.startY, app.board) = boardGenerator(app)
-    #app.board = hardCodedPath(app)
     app.cellCount = 0
     app.enemies = [ ] 
     app.turrets = [ ]
@@ -431,6 +469,7 @@ def getCellBounds(app, row, col):
     y1 = (row+1) * app.cellHeight
     return (x0, y0, x1, y1)
 
+#randomly generates a starting location and then a map from it
 def boardGenerator(app):
     start = random.randint(0,3)
     if start == 0: #start on left side
@@ -461,6 +500,7 @@ def boardGenerator(app):
     minimumPath = 20
     return (startX, startY, randomMapGenerator(app, board, startRow, startCol, minimumPath, set()))
 
+# randomly generates a map
 def randomMapGenerator(app, board, row, col, minimumPath, seenPath, count = 0):
     if (row == 0 or row == app.rows - 1 or col == 0 or col == app.cols - 1) and count >= minimumPath:
         return board
@@ -497,7 +537,7 @@ def randomMapGenerator(app, board, row, col, minimumPath, seenPath, count = 0):
                 seenPath.remove((newRow2, newCol2))
         return None
 
-
+# checks to see if a path is legal when making a board
 def isPathLegal(app, newRow, newCol, newRow1, newCol1, newRow2, newCol2, seenPath):
     if (newRow >= app.rows or newRow < 0 or newCol >= app.cols or newCol < 0 or 
         newRow1 >= app.rows or newRow1 < 0 or newCol1 >= app.cols or newCol1 < 0
@@ -511,28 +551,6 @@ def isPathLegal(app, newRow, newCol, newRow1, newCol1, newRow2, newCol2, seenPat
         seenPath.add((newRow2, newCol2))
         return True
     return False
-
-
-# creates a hardcoded map
-def hardCodedPath(app):
-    board = [ [app.boardColor] * app.cols for row in range(app.rows)]
-    for row in range(app.rows):
-        for col in range(app.cols):
-            if row == 2 and col < 18:
-                board[row][col] = app.pathColor
-            elif col == 17 and row > 2 and row < 13:
-                board[row][col] = app.pathColor
-            elif row == 13 and col < 18 and col > 12:
-                board[row][col] = app.pathColor
-            elif col == 12 and row < 14 and row > 5:
-                board[row][col] = app.pathColor
-            elif row == 6 and col < 12 and col > 6:
-                board[row][col] = app.pathColor
-            elif col == 7 and row < 14 and row > 5:
-                board[row][col] = app.pathColor
-            elif row == 13 and col < 8:
-                board[row][col] = app.pathColor
-    return board
 
 # from HW 6 (Tetris)
 # draws the cells of the board using the given dimensions and color
@@ -672,6 +690,7 @@ def closestEnemy(app, turret):
             closeE = enemy
     return closeE
 
+# changes the wave
 def waveChanger(app):
     if app.waveFinished == True and len(app.enemies) == 0:
         app.wave += 1
@@ -691,19 +710,22 @@ def waveChanger(app):
         app.enemyBossCounter = 0
         app.waveFinished = False
 
+# checks how much health the player is at
 def checkHealth(app):
     for enemy in app.enemies:
         if enemy.health <= 0:
             app.enemies.remove(enemy)
             app.currency += enemy.worth
 
+# checks to see if a shot is still on the screen
 def checkShot(app):
     for shot in app.shots:
         if (shot.shotx >= app.gridWidth or shot.shotx <= 0 or 
                 shot.shoty >= app.height or shot.shoty <= 0):
             app.shots.remove(shot)
 
-def timerFired(app):
+# timer fired while playing
+def gameMode_timerFired(app):
     currTime = time.time()
     elapsedTime = currTime - app.initialTimeCurrency
     if app.health <= 0 :
@@ -717,18 +739,16 @@ def timerFired(app):
         for turret in app.turrets:
             turret.shootEnemy(app)
         waveChanger(app)
-        if elapsedTime >= 1:
+        if elapsedTime >= 5:
             app.currency += 1
             app.initialTimeCurrency = currTime
 
-def keyPressed(app, event):
+def gameMode_keyPressed(app, event):
     if event.key == 'Escape':
         app.pause = not app.pause
-    elif event.key == 'Space':
-        spawnEnemy(app)
-        
+        app.mode = 'pauseMode'
 
-def mousePressed(app, event):
+def gameMode_mousePressed(app, event):
     w = app.width
     h = app.height
     m = app.shopMargin
@@ -763,6 +783,7 @@ def mousePressed(app, event):
         app.selectedTurret = None
     whatIsClicked(app, x, y)
 
+# checks to see what is clicked in the shop
 def whatIsClicked(app, x, y):
     w = app.width
     h = app.height
@@ -774,15 +795,14 @@ def whatIsClicked(app, x, y):
     elif (x >= w-m*3//4 and x <= w-m//4 and y >= h//4+300 and y <= h//4+400):
         app.selectedTurret = Bomber
 
-
-def mouseMoved(app, event):
+def gameMode_mouseMoved(app, event):
     x = event.x
     y = event.y
     if app.selectedTurret != None:
         app.selectedTurretX = x
         app.selectedTurretY = y
 
-
+# draws the selected turret
 def drawSelectedTurret(app, canvas):
     if app.selectedTurret != None:
         if app.selectedTurretX != None and app.selectedTurretY != None:
@@ -796,7 +816,7 @@ def drawSelectedTurret(app, canvas):
 #draws when gave is over
 def drawGameOver(app, canvas):
     canvas.create_text(app.width // 2, app.height // 2, text = "GAME OVER",
-                        font = '100')
+                        font = 'Arial 80 bold')
 
 #draws how much health player has left and current wave
 def drawHealthAndWave(app, canvas):
@@ -806,8 +826,7 @@ def drawHealthAndWave(app, canvas):
     canvas.create_text((app.width - app.shopMargin) // 2, app.height - 15, 
                         text = f"Wave {app.wave}", font = "Arial 16 bold")
 
-def redrawAll(app, canvas):
-    #canvas.create_rectangle(0,0, app.width, app.height, fill = "green")
+def gameMode_redrawAll(app, canvas):
     drawBoard(app, canvas)
     for turret in app.turrets:
         turret.drawTurret(canvas)

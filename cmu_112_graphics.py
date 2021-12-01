@@ -1,3 +1,4 @@
+# got this whole page from: https://www.cs.cmu.edu/~112/notes/notes-graphics.html
 # cmu_112_graphics.py
 # version 0.9.0
 
