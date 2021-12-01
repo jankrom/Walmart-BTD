@@ -424,7 +424,7 @@ def appStarted(app):
     app.turrets = [ ]
     app.wave = 1
     app.health = 100
-    app.currency = 500
+    app.currency = 100
     app.pause = True
     app.gameOver = False
     app.cannonPrice = 100
