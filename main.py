@@ -158,7 +158,7 @@ class Red(Enemy):
         self.color = 'red'
         self.seenPath = set()
         self.count = 0
-        self.worth = 30
+        self.worth = 5
         self.slowed = False
 
 # sane as red but with more HP
@@ -175,7 +175,7 @@ class Blue(Enemy):
         self.color = 'blue'
         self.seenPath = set()
         self.count = 0
-        self.worth = 50
+        self.worth = 8
         self.slowed = False
 
 # faster than blue and yellow, but with less HP
@@ -183,8 +183,8 @@ class Yellow(Enemy):
     def __init__(self, x, y):
         self.x = x
         self.y = y
-        self.speedx = 7
-        self.speedy = 7
+        self.speedx = 10
+        self.speedy = 10
         self.lastMovement = 0
         self.health = 150
         self.r = 20
@@ -192,7 +192,7 @@ class Yellow(Enemy):
         self.color = 'yellow'
         self.seenPath = set()
         self.count = 0
-        self.worth = 100
+        self.worth = 10
         self.slowed = False
 
 # much slower but has a lot more HP
@@ -203,13 +203,13 @@ class Boss(Enemy):
         self.speedx = 2
         self.speedy = 2
         self.lastMovement = 0
-        self.health = 1000
+        self.health = 2000
         self.r = 50
         self.destruct = 20
         self.color = 'brown'
         self.seenPath = set()
         self.count = 0
-        self.worth = 1000
+        self.worth = 200
         self.slowed = False
 
 #############################################################################
@@ -434,6 +434,7 @@ def appStarted(app):
     app.selectedTurretX = None
     app.selectedTurretY = None
     app.enemySpawnCounter = 0
+    app.enemyCounter = 0
     app.red = 0
     app.blue = 0
     app.yellow = 0
@@ -600,6 +601,7 @@ def spawnEnemy(app):
                 app.enemies.append(Red(app.startX, app.startY))
                 app.initialTimeWave = time.time()
                 app.enemySpawnCounter += 1
+                app.enemyCounter += 1
             else:
                 app.waveFinished = True
     elif app.wave == 2:
@@ -608,10 +610,12 @@ def spawnEnemy(app):
                 app.enemies.append(Red(app.startX, app.startY))
                 app.initialTimeWave = time.time()
                 app.enemySpawnCounter += 1
+                app.enemyCounter += 1
             elif 9 < app.enemySpawnCounter < 15:
                 app.enemies.append(Blue(app.startX, app.startY))
                 app.initialTimeWave = time.time()
                 app.enemySpawnCounter += 1
+                app.enemyCounter += 1
             else:
                 app.waveFinished = True
     elif app.wave == 3:
@@ -620,10 +624,12 @@ def spawnEnemy(app):
                 app.enemies.append(Red(app.startX, app.startY))
                 app.initialTimeWave = time.time()
                 app.enemySpawnCounter += 1
+                app.enemyCounter += 1
             elif 14 < app.enemySpawnCounter < 30:
                 app.enemies.append(Blue(app.startX, app.startY))
                 app.initialTimeWave = time.time()
                 app.enemySpawnCounter += 1
+                app.enemyCounter += 1
             else:
                 app.waveFinished = True
     elif app.wave == 4:
@@ -632,6 +638,7 @@ def spawnEnemy(app):
                 app.enemies.append(Blue(app.startX, app.startY))
                 app.initialTimeWave = time.time()
                 app.enemySpawnCounter += 1
+                app.enemyCounter += 1
             else:
                 app.waveFinished = True
     elif app.wave == 5:
@@ -640,14 +647,17 @@ def spawnEnemy(app):
                 app.enemies.append(Red(app.startX, app.startY))
                 app.initialTimeWave = time.time()
                 app.enemySpawnCounter += 1
+                app.enemyCounter += 1
             if app.enemySpawnCounter < 30:
                 app.enemies.append(Blue(app.startX, app.startY))
                 app.initialTimeWave = time.time()
                 app.enemySpawnCounter += 1
+                app.enemyCounter += 1
             if app.enemySpawnCounter == 20:
                 app.enemies.append(Boss(app.startX, app.startY))
                 app.initialTimeWave = time.time()
                 app.enemySpawnCounter += 1
+                app.enemyCounter += 1
             else:
                 app.waveFinished = True
     elif app.wave >= 6:
@@ -655,15 +665,19 @@ def spawnEnemy(app):
             if app.enemyYellowCounter <= app.yellow:
                 app.enemies.append(Yellow(app.startX, app.startY))
                 app.enemyYellowCounter += 1
+                app.enemyCounter += 1
             if app.enemyRedCounter <= app.red:
                 app.enemies.append(Red(app.startX, app.startY))
                 app.enemyRedCounter += 1
+                app.enemyCounter += 1
             if app.enemyBlueCounter <= app.blue:
                 app.enemies.append(Blue(app.startX, app.startY))
                 app.enemyBlueCounter += 1
+                app.enemyCounter += 1
             if app.enemyBossCounter <= app.boss:
                 app.enemies.append(Boss(app.startX, app.startY))
                 app.enemyBossCounter += 1
+                app.enemyCounter += 1
             else:
                 app.waveFinished = True
 
@@ -703,6 +717,17 @@ def waveChanger(app):
         if app.wave >= 20:
             app.boss += 5
             app.yellow += 30
+        if app.currency >= 1000:
+            app.boss += 5
+        if len(app.turrets) >= 5:
+            app.yellow += 15
+            app.blue += 5
+            app.boss += 1
+            if len(app.turrets) % 2 == 0:
+                app.red += random.randint(1,15)
+                app.blue += random.randint(1,10)
+                app.yellow += random.randint(1,8)
+                app.boss += random.randint(1,3)
         app.enemySpawnCounter = 0
         app.enemyRedCounter = 0
         app.enemyBlueCounter = 0
