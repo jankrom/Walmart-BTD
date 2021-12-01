@@ -424,7 +424,7 @@ def appStarted(app):
     app.turrets = [ ]
     app.wave = 1
     app.health = 100
-    app.currency = 100
+    app.currency = 500
     app.pause = True
     app.gameOver = False
     app.cannonPrice = 100
@@ -455,7 +455,7 @@ def pointInGrid(app, x, y):
             (app.margin <= y <= app.height-app.margin))
 
 # https://www.cs.cmu.edu/~112/notes/notes-animations-part2.html
-# return (row, col) in which (x, y) occurred or (-1, -1) if outside grid.
+# return (row, col) in which (x, y) occurred or (-1, -1) if outside grid
 def getCell(app, x, y):
     row = int(y / app.cellHeight)
     col = int(x / app.cellWidth)
