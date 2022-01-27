@@ -15,7 +15,7 @@ def splashScreenMode_redrawAll(app, canvas):
 
 def splashScreenMode_keyPressed(app, event):
     if event.key == 'p':
-        app.mode = "gameMode"
+        app.mode = "gameMode" 
     elif event.key == 'h':
         app.mode = 'helpMode'
 
